@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import {
   Scene,
   PerspectiveCamera,
@@ -15,7 +15,9 @@ import {
   BufferGeometry,
   LineBasicMaterial,
   Line,
-  Float32BufferAttribute
+  Float32BufferAttribute,
+  Box3,
+  Sphere
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { Pose } from '../utils/posemath'
@@ -91,6 +93,63 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
   const inputFrameRef = useRef<Group | null>(null)
   const resultFrameRef = useRef<Group | null>(null)
   const connectionLineRef = useRef<Line | null>(null)
+  const gridRef = useRef<GridHelper | null>(null)
+
+  // Camera animation targets
+  const targetCameraPosRef = useRef<Vector3 | null>(null)
+  const targetControlsTargetRef = useRef<Vector3 | null>(null)
+
+  // Calculate where camera should be to fit both frames
+  const calculateCameraFit = useCallback((inputPos: Vector3, resultPos: Vector3) => {
+    const camera = cameraRef.current
+    const controls = controlsRef.current
+    if (!camera || !controls) return
+
+    // Calculate bounding box containing both frames (with some padding for the axes)
+    const box = new Box3()
+    const padding = 1.5 // Account for axis arrow length
+
+    // Add input position with padding
+    box.expandByPoint(new Vector3(
+      inputPos.x - padding, inputPos.y - padding, inputPos.z - padding
+    ))
+    box.expandByPoint(new Vector3(
+      inputPos.x + padding, inputPos.y + padding, inputPos.z + padding
+    ))
+
+    // Add result position with padding
+    box.expandByPoint(new Vector3(
+      resultPos.x - padding, resultPos.y - padding, resultPos.z - padding
+    ))
+    box.expandByPoint(new Vector3(
+      resultPos.x + padding, resultPos.y + padding, resultPos.z + padding
+    ))
+
+    // Always include origin area
+    box.expandByPoint(new Vector3(-1, -1, -1))
+    box.expandByPoint(new Vector3(1, 1, 1))
+
+    // Get bounding sphere
+    const sphere = new Sphere()
+    box.getBoundingSphere(sphere)
+
+    // Calculate required distance to fit sphere in view
+    const fov = camera.fov * (Math.PI / 180)
+    const distance = sphere.radius / Math.sin(fov / 2)
+
+    // Calculate camera position - maintain similar angle but adjust distance
+    const center = sphere.center.clone()
+    const currentDir = camera.position.clone().sub(controls.target).normalize()
+
+    // Minimum distance for good visibility
+    const finalDistance = Math.max(distance * 1.2, 5)
+
+    const newCameraPos = center.clone().add(currentDir.multiplyScalar(finalDistance))
+
+    // Store targets for animation loop to pick up
+    targetCameraPosRef.current = newCameraPos
+    targetControlsTargetRef.current = center
+  }, [])
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -124,7 +183,7 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     controls.enableDamping = true
     controls.dampingFactor = 0.05
     controls.minDistance = 2
-    controls.maxDistance = 20
+    controls.maxDistance = 200 // Allow zooming out further for large coordinates
     controlsRef.current = controls
 
     // Lighting
@@ -135,10 +194,11 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     directionalLight.position.set(5, 10, 5)
     scene.add(directionalLight)
 
-    // Grid - rotated to XY plane (Z-up)
-    const grid = new GridHelper(10, 10, 0x94a3b8, 0xe2e8f0) // slate colors
+    // Grid - rotated to XY plane (Z-up), larger to accommodate distant poses
+    const grid = new GridHelper(100, 100, 0x94a3b8, 0xe2e8f0) // slate colors
     grid.rotation.x = Math.PI / 2 // Rotate to lie on XY plane
     scene.add(grid)
+    gridRef.current = grid
 
     // World origin axes (subtle)
     const worldAxes = new AxesHelper(0.5)
@@ -179,6 +239,28 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     // Animation loop
     function animate() {
       animationIdRef.current = requestAnimationFrame(animate)
+
+      // Smoothly animate camera towards target position
+      if (targetCameraPosRef.current && targetControlsTargetRef.current) {
+        const lerpFactor = 0.08
+
+        // Lerp controls target (orbit center)
+        controls.target.lerp(targetControlsTargetRef.current, lerpFactor)
+
+        // Lerp camera position
+        camera.position.lerp(targetCameraPosRef.current, lerpFactor)
+
+        // Check if we're close enough to stop animating
+        const targetDist = camera.position.distanceTo(targetCameraPosRef.current)
+        const controlsDist = controls.target.distanceTo(targetControlsTargetRef.current)
+        if (targetDist < 0.01 && controlsDist < 0.01) {
+          camera.position.copy(targetCameraPosRef.current)
+          controls.target.copy(targetControlsTargetRef.current)
+          targetCameraPosRef.current = null
+          targetControlsTargetRef.current = null
+        }
+      }
+
       controls.update()
       renderer.render(scene, camera)
     }
@@ -242,7 +324,10 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     positions.setXYZ(0, inputPos.x, inputPos.y, inputPos.z)
     positions.setXYZ(1, resultPos.x, resultPos.y, resultPos.z)
     positions.needsUpdate = true
-  }, [inputPose, resultPose, transform])
+
+    // Auto-fit camera to keep both frames visible
+    calculateCameraFit(inputPos, resultPos)
+  }, [inputPose, resultPose, transform, calculateCameraFit])
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
