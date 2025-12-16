@@ -20,10 +20,8 @@ function NumberInput({ value, onChange, disabled, className, step }: NumberInput
   useEffect(() => {
     // Only update if the local value represents a different number
     const localNum = parseFloat(localValue)
-    if (!isNaN(localNum) && localNum !== value) {
-      setLocalValue(String(value))
-    } else if (isNaN(localNum) && !isNaN(value)) {
-      // Local is intermediate state, external changed - update local
+    const effectiveLocalNum = isNaN(localNum) ? 0 : localNum
+    if (effectiveLocalNum !== value) {
       setLocalValue(String(value))
     }
   }, [value])
@@ -32,18 +30,16 @@ function NumberInput({ value, onChange, disabled, className, step }: NumberInput
     const newValue = e.target.value
     setLocalValue(newValue)
 
-    // Only propagate to parent if it's a valid number
+    // Propagate to parent - treat invalid inputs (empty, '-', etc.) as 0
     const num = parseFloat(newValue)
-    if (!isNaN(num)) {
-      onChange(num)
-    }
+    onChange(isNaN(num) ? 0 : num)
   }
 
   const handleBlur = () => {
-    // On blur, if the value is invalid, reset to the external value
+    // On blur, if the value is invalid, show 0 (which is what we've been treating it as)
     const num = parseFloat(localValue)
     if (isNaN(num)) {
-      setLocalValue(String(value))
+      setLocalValue('0')
     }
   }
 
