@@ -261,18 +261,40 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
       <div ref={containerRef} className="flex-1 min-h-[400px]" />
 
       {/* Legend */}
-      <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 flex gap-4 text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span className="text-slate-600">Input</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-          <span className="text-slate-600">Transform</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <span className="text-slate-600">Result</span>
+      <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs">
+        <div className="flex gap-6">
+          {/* Input frame */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-600 font-medium">Input:</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
+              <span className="text-slate-500">X</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
+              <span className="text-slate-500">Y</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500"></div>
+              <span className="text-slate-500">Z</span>
+            </div>
+          </div>
+          {/* Result frame */}
+          <div className="flex items-center gap-2">
+            <span className="text-slate-600 font-medium">Result:</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-red-500"></div>
+              <span className="text-slate-500">X</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-lime-500"></div>
+              <span className="text-slate-500">Y</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded-sm bg-cyan-500"></div>
+              <span className="text-slate-500">Z</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
