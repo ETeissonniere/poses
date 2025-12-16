@@ -25,7 +25,7 @@ export function ResultCard({ result, resultMatrix, onUseAsInput }: ResultCardPro
   }, [result.position])
 
   const copyQuaternion = useCallback(async () => {
-    const text = `${formatNumber(result.quaternion.x)}, ${formatNumber(result.quaternion.y)}, ${formatNumber(result.quaternion.z)}, ${formatNumber(result.quaternion.w)}`
+    const text = `${formatNumber(result.quaternion.w)}, ${formatNumber(result.quaternion.x)}, ${formatNumber(result.quaternion.y)}, ${formatNumber(result.quaternion.z)}`
     try {
       await navigator.clipboard.writeText(text)
       setCopiedQuat(true)
@@ -107,6 +107,10 @@ export function ResultCard({ result, resultMatrix, onUseAsInput }: ResultCardPro
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div>
+              <label className="text-xs font-medium text-slate-500 mb-1">W</label>
+              <div className={valueClass}>{formatNumber(result.quaternion.w)}</div>
+            </div>
+            <div>
               <label className="text-xs font-medium text-slate-500 mb-1">X</label>
               <div className={valueClass}>{formatNumber(result.quaternion.x)}</div>
             </div>
@@ -117,10 +121,6 @@ export function ResultCard({ result, resultMatrix, onUseAsInput }: ResultCardPro
             <div>
               <label className="text-xs font-medium text-slate-500 mb-1">Z</label>
               <div className={valueClass}>{formatNumber(result.quaternion.z)}</div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 mb-1">W</label>
-              <div className={valueClass}>{formatNumber(result.quaternion.w)}</div>
             </div>
           </div>
         </div>

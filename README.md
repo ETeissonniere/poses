@@ -12,7 +12,7 @@ Open http://localhost:5173
 
 ## Features
 
-- Input position (X, Y, Z) and quaternion (X, Y, Z, W)
+- Input position (X, Y, Z) and quaternion (W, X, Y, Z)
 - View 4x4 transformation matrices
 - Apply transforms in local frame (result = pose × transform)
 - Chain transforms with "Use as New Input"

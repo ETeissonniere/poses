@@ -110,6 +110,17 @@ export function PoseInput({
         </div>
         <div className="grid grid-cols-4 gap-3">
           <div>
+            <label className={labelClass}>W</label>
+            <input
+              type="number"
+              value={quaternion.w}
+              onChange={(e) => handleQuaternionChange('w', e.target.value)}
+              disabled={disabled}
+              className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
+              step="0.01"
+            />
+          </div>
+          <div>
             <label className={labelClass}>X</label>
             <input
               type="number"
@@ -137,17 +148,6 @@ export function PoseInput({
               type="number"
               value={quaternion.z}
               onChange={(e) => handleQuaternionChange('z', e.target.value)}
-              disabled={disabled}
-              className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
-              step="0.01"
-            />
-          </div>
-          <div>
-            <label className={labelClass}>W</label>
-            <input
-              type="number"
-              value={quaternion.w}
-              onChange={(e) => handleQuaternionChange('w', e.target.value)}
               disabled={disabled}
               className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
               step="0.01"
