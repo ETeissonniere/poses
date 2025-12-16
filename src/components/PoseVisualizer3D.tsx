@@ -125,9 +125,6 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
       resultPos.x + padding, resultPos.y + padding, resultPos.z + padding
     ))
 
-    // Always include origin area
-    box.expandByPoint(new Vector3(-1, -1, -1))
-    box.expandByPoint(new Vector3(1, 1, 1))
 
     // Get bounding sphere
     const sphere = new Sphere()
@@ -324,6 +321,27 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     positions.setXYZ(0, inputPos.x, inputPos.y, inputPos.z)
     positions.setXYZ(1, resultPos.x, resultPos.y, resultPos.z)
     positions.needsUpdate = true
+
+    // Dynamically resize grid to encompass poses
+    if (gridRef.current && sceneRef.current) {
+      const maxExtent = Math.max(
+        Math.abs(inputPos.x), Math.abs(inputPos.y),
+        Math.abs(resultPos.x), Math.abs(resultPos.y),
+        10 // minimum grid size
+      )
+      const gridSize = Math.ceil(maxExtent * 2.5 / 10) * 10 // Round up to nearest 10
+
+      // Only update if size changed significantly
+      const currentSize = gridRef.current.geometry.parameters?.width || 100
+      if (Math.abs(gridSize - currentSize) > 10) {
+        sceneRef.current.remove(gridRef.current)
+        gridRef.current.geometry.dispose()
+        const newGrid = new GridHelper(gridSize, gridSize, 0x94a3b8, 0xe2e8f0)
+        newGrid.rotation.x = Math.PI / 2
+        sceneRef.current.add(newGrid)
+        gridRef.current = newGrid
+      }
+    }
 
     // Auto-fit camera to keep both frames visible
     calculateCameraFit(inputPos, resultPos)
