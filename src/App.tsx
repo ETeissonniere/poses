@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { PoseCard } from './components/PoseCard'
 import { TransformCard } from './components/TransformCard'
 import { ResultCard } from './components/ResultCard'
+import { PoseVisualizer3D } from './components/PoseVisualizer3D'
 import {
   identityPose,
   identityTransform,
@@ -48,7 +49,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-200">
               <span className="text-white text-xl">⬡</span>
@@ -61,47 +62,61 @@ function App() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        {/* Input Pose */}
-        <PoseCard
-          pose={inputPose}
-          poseMatrix={inputMatrixArray}
-          onPoseChange={setInputPose}
-          onReset={handleResetPose}
-        />
+      {/* Main content - two column layout */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left column - Cards */}
+          <div className="space-y-4">
+            {/* Input Pose */}
+            <PoseCard
+              pose={inputPose}
+              poseMatrix={inputMatrixArray}
+              onPoseChange={setInputPose}
+              onReset={handleResetPose}
+            />
 
-        {/* Arrow indicator */}
-        <div className="flex justify-center">
-          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-            <span className="text-slate-500">↓</span>
+            {/* Arrow indicator */}
+            <div className="flex justify-center">
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <span className="text-slate-500">↓</span>
+              </div>
+            </div>
+
+            {/* Transform */}
+            <TransformCard
+              transform={transform}
+              transformMatrix={transformMatrixArray}
+              onTransformChange={setTransform}
+              onReset={handleResetTransform}
+            />
+
+            {/* Arrow indicator */}
+            <div className="flex justify-center">
+              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <span className="text-slate-500">↓</span>
+              </div>
+            </div>
+
+            {/* Result */}
+            <ResultCard
+              result={resultPose}
+              resultMatrix={resultMatrixArray}
+              onUseAsInput={handleUseAsInput}
+            />
+          </div>
+
+          {/* Right column - 3D Visualization */}
+          <div className="lg:sticky lg:top-6 lg:self-start">
+            <PoseVisualizer3D
+              inputPose={inputPose}
+              transform={transform}
+              resultPose={resultPose}
+            />
           </div>
         </div>
-
-        {/* Transform */}
-        <TransformCard
-          transform={transform}
-          transformMatrix={transformMatrixArray}
-          onTransformChange={setTransform}
-          onReset={handleResetTransform}
-        />
-
-        {/* Arrow indicator */}
-        <div className="flex justify-center">
-          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-            <span className="text-slate-500">↓</span>
-          </div>
-        </div>
-
-        {/* Result */}
-        <ResultCard
-          result={resultPose}
-          resultMatrix={resultMatrixArray}
-          onUseAsInput={handleUseAsInput}
-        />
 
         {/* Footer */}
-        <footer className="text-center text-xs text-slate-400 py-4">
+        <footer className="text-center text-xs text-slate-400 py-8 mt-6">
           <p>Local frame convention: result = pose × transform</p>
           <p className="mt-1">
             By <a href="https://eliottteissonniere.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-slate-700 underline">Eliott Teissonniere</a>
