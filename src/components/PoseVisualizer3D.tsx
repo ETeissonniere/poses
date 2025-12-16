@@ -94,6 +94,7 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
   const resultFrameRef = useRef<Group | null>(null)
   const connectionLineRef = useRef<Line | null>(null)
   const gridRef = useRef<GridHelper | null>(null)
+  const gridSizeRef = useRef<number>(100)
 
   // Camera animation targets
   const targetCameraPosRef = useRef<Vector3 | null>(null)
@@ -332,8 +333,9 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
       const gridSize = Math.ceil(maxExtent * 2.5 / 10) * 10 // Round up to nearest 10
 
       // Only update if size changed significantly
-      const currentSize = gridRef.current.geometry.parameters?.width || 100
+      const currentSize = gridSizeRef.current
       if (Math.abs(gridSize - currentSize) > 10) {
+        gridSizeRef.current = gridSize
         sceneRef.current.remove(gridRef.current)
         gridRef.current.geometry.dispose()
         const newGrid = new GridHelper(gridSize, gridSize, 0x94a3b8, 0xe2e8f0)

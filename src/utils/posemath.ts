@@ -5,10 +5,6 @@ export interface Pose {
   quaternion: { x: number; y: number; z: number; w: number }
 }
 
-export interface PoseWithMatrix extends Pose {
-  matrix: number[][]
-}
-
 /**
  * Creates a 4x4 transformation matrix from position and quaternion
  */
