@@ -4,6 +4,62 @@ import { isQuaternionNormalized, normalizeQuaternion, quaternionMagnitude, euler
 type RotationMode = 'quaternion' | 'euler'
 type EulerOrder = 'XYZ' | 'XZY' | 'YXZ' | 'YZX' | 'ZXY' | 'ZYX'
 
+// NumberInput component that allows intermediate states like '-' while typing
+interface NumberInputProps {
+  value: number
+  onChange: (value: number) => void
+  disabled?: boolean
+  className?: string
+  step?: string
+}
+
+function NumberInput({ value, onChange, disabled, className, step }: NumberInputProps) {
+  const [localValue, setLocalValue] = useState(String(value))
+
+  // Sync local state when external value changes (but not while user is typing intermediate values)
+  useEffect(() => {
+    // Only update if the local value represents a different number
+    const localNum = parseFloat(localValue)
+    if (!isNaN(localNum) && localNum !== value) {
+      setLocalValue(String(value))
+    } else if (isNaN(localNum) && !isNaN(value)) {
+      // Local is intermediate state, external changed - update local
+      setLocalValue(String(value))
+    }
+  }, [value])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value
+    setLocalValue(newValue)
+
+    // Only propagate to parent if it's a valid number
+    const num = parseFloat(newValue)
+    if (!isNaN(num)) {
+      onChange(num)
+    }
+  }
+
+  const handleBlur = () => {
+    // On blur, if the value is invalid, reset to the external value
+    const num = parseFloat(localValue)
+    if (isNaN(num)) {
+      setLocalValue(String(value))
+    }
+  }
+
+  return (
+    <input
+      type="number"
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={disabled}
+      className={className}
+      step={step}
+    />
+  )
+}
+
 interface PoseInputProps {
   position: { x: number; y: number; z: number }
   quaternion: { x: number; y: number; z: number; w: number }
@@ -37,18 +93,12 @@ export function PoseInput({
     }
   }, [quaternion, eulerOrder, rotationMode])
 
-  const handlePositionChange = useCallback((axis: 'x' | 'y' | 'z', value: string) => {
-    const num = value === '' || value === '-' ? 0 : parseFloat(value)
-    if (!isNaN(num)) {
-      onPositionChange({ ...position, [axis]: num })
-    }
+  const handlePositionChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
+    onPositionChange({ ...position, [axis]: value })
   }, [position, onPositionChange])
 
-  const handleQuaternionChange = useCallback((axis: 'x' | 'y' | 'z' | 'w', value: string) => {
-    const num = value === '' || value === '-' ? 0 : parseFloat(value)
-    if (!isNaN(num)) {
-      onQuaternionChange({ ...quaternion, [axis]: num })
-    }
+  const handleQuaternionChange = useCallback((axis: 'x' | 'y' | 'z' | 'w', value: number) => {
+    onQuaternionChange({ ...quaternion, [axis]: value })
   }, [quaternion, onQuaternionChange])
 
   const handleNormalize = useCallback(() => {
@@ -57,15 +107,12 @@ export function PoseInput({
     }
   }, [quaternion, onQuaternionChange, magnitude])
 
-  const handleEulerChange = useCallback((axis: 'x' | 'y' | 'z', value: string) => {
-    const num = value === '' || value === '-' ? 0 : parseFloat(value)
-    if (!isNaN(num)) {
-      const radians = useDegrees ? num * (Math.PI / 180) : num
-      const newEuler = { ...eulerAngles, [axis]: radians }
-      setEulerAngles(newEuler)
-      const newQuat = eulerToQuaternion(newEuler.x, newEuler.y, newEuler.z, eulerOrder)
-      onQuaternionChange(newQuat)
-    }
+  const handleEulerChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
+    const radians = useDegrees ? value * (Math.PI / 180) : value
+    const newEuler = { ...eulerAngles, [axis]: radians }
+    setEulerAngles(newEuler)
+    const newQuat = eulerToQuaternion(newEuler.x, newEuler.y, newEuler.z, eulerOrder)
+    onQuaternionChange(newQuat)
   }, [eulerAngles, eulerOrder, useDegrees, onQuaternionChange])
 
   const getDisplayEuler = (axis: 'x' | 'y' | 'z'): number => {
@@ -96,10 +143,9 @@ export function PoseInput({
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className={labelClass}>X</label>
-            <input
-              type="number"
+            <NumberInput
               value={position.x}
-              onChange={(e) => handlePositionChange('x', e.target.value)}
+              onChange={(v) => handlePositionChange('x', v)}
               disabled={disabled}
               className={inputClass}
               step="0.01"
@@ -107,10 +153,9 @@ export function PoseInput({
           </div>
           <div>
             <label className={labelClass}>Y</label>
-            <input
-              type="number"
+            <NumberInput
               value={position.y}
-              onChange={(e) => handlePositionChange('y', e.target.value)}
+              onChange={(v) => handlePositionChange('y', v)}
               disabled={disabled}
               className={inputClass}
               step="0.01"
@@ -118,10 +163,9 @@ export function PoseInput({
           </div>
           <div>
             <label className={labelClass}>Z</label>
-            <input
-              type="number"
+            <NumberInput
               value={position.z}
-              onChange={(e) => handlePositionChange('z', e.target.value)}
+              onChange={(v) => handlePositionChange('z', v)}
               disabled={disabled}
               className={inputClass}
               step="0.01"
@@ -165,10 +209,9 @@ export function PoseInput({
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <label className={labelClass}>W</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={quaternion.w}
-                  onChange={(e) => handleQuaternionChange('w', e.target.value)}
+                  onChange={(v) => handleQuaternionChange('w', v)}
                   disabled={disabled}
                   className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
                   step="0.01"
@@ -176,10 +219,9 @@ export function PoseInput({
               </div>
               <div>
                 <label className={labelClass}>X</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={quaternion.x}
-                  onChange={(e) => handleQuaternionChange('x', e.target.value)}
+                  onChange={(v) => handleQuaternionChange('x', v)}
                   disabled={disabled}
                   className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
                   step="0.01"
@@ -187,10 +229,9 @@ export function PoseInput({
               </div>
               <div>
                 <label className={labelClass}>Y</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={quaternion.y}
-                  onChange={(e) => handleQuaternionChange('y', e.target.value)}
+                  onChange={(v) => handleQuaternionChange('y', v)}
                   disabled={disabled}
                   className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
                   step="0.01"
@@ -198,10 +239,9 @@ export function PoseInput({
               </div>
               <div>
                 <label className={labelClass}>Z</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={quaternion.z}
-                  onChange={(e) => handleQuaternionChange('z', e.target.value)}
+                  onChange={(v) => handleQuaternionChange('z', v)}
                   disabled={disabled}
                   className={`${inputClass} ${!isNormalized && magnitude > 0 ? 'border-amber-300' : ''}`}
                   step="0.01"
@@ -252,10 +292,9 @@ export function PoseInput({
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className={labelClass}>X (Roll)</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={parseFloat(getDisplayEuler('x').toFixed(4))}
-                  onChange={(e) => handleEulerChange('x', e.target.value)}
+                  onChange={(v) => handleEulerChange('x', v)}
                   disabled={disabled}
                   className={inputClass}
                   step={useDegrees ? "1" : "0.01"}
@@ -263,10 +302,9 @@ export function PoseInput({
               </div>
               <div>
                 <label className={labelClass}>Y (Pitch)</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={parseFloat(getDisplayEuler('y').toFixed(4))}
-                  onChange={(e) => handleEulerChange('y', e.target.value)}
+                  onChange={(v) => handleEulerChange('y', v)}
                   disabled={disabled}
                   className={inputClass}
                   step={useDegrees ? "1" : "0.01"}
@@ -274,10 +312,9 @@ export function PoseInput({
               </div>
               <div>
                 <label className={labelClass}>Z (Yaw)</label>
-                <input
-                  type="number"
+                <NumberInput
                   value={parseFloat(getDisplayEuler('z').toFixed(4))}
-                  onChange={(e) => handleEulerChange('z', e.target.value)}
+                  onChange={(v) => handleEulerChange('z', v)}
                   disabled={disabled}
                   className={inputClass}
                   step={useDegrees ? "1" : "0.01"}
