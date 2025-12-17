@@ -108,9 +108,11 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     const controls = controlsRef.current
     if (!camera || !controls) return
 
-    // Calculate bounding box containing both frames (with some padding for the axes)
+    // Minimal padding just to account for axis arrows
+    const padding = 0.5
+
+    // Calculate bounding box containing both frames
     const box = new Box3()
-    const padding = 1.5 // Account for axis arrow length
 
     // Add input position with padding
     box.expandByPoint(new Vector3(
@@ -128,7 +130,6 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
       resultPos.x + padding, resultPos.y + padding, resultPos.z + padding
     ))
 
-
     // Get bounding sphere
     const sphere = new Sphere()
     box.getBoundingSphere(sphere)
@@ -141,8 +142,8 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     const center = sphere.center.clone()
     const currentDir = camera.position.clone().sub(controls.target).normalize()
 
-    // Minimum distance for good visibility
-    const finalDistance = Math.max(distance * 1.2, 5)
+    // Tight framing - just enough to see the poses clearly
+    const finalDistance = Math.max(distance * 1.1, 0.8)
 
     const newCameraPos = center.clone().add(currentDir.multiplyScalar(finalDistance))
 
