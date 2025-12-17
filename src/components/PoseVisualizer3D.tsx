@@ -207,20 +207,20 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     )
     scene.add(worldAxes)
 
-    // Input pose frame (blue tones)
+    // Current pose frame (standard RGB)
     const inputFrame = createCoordinateFrame(1, {
-      x: 0x3b82f6, // blue-500
-      y: 0x22c55e, // green-500
-      z: 0x6366f1  // indigo-500
+      x: 0xdc2626, // red-600
+      y: 0x16a34a, // green-600
+      z: 0x2563eb  // blue-600
     })
     scene.add(inputFrame)
     inputFrameRef.current = inputFrame
 
-    // Result pose frame (emerald/teal tones)
+    // Transformed pose frame (lighter RGB tones)
     const resultFrame = createCoordinateFrame(1, {
-      x: 0xef4444, // red-500
-      y: 0x84cc16, // lime-500
-      z: 0x06b6d4  // cyan-500
+      x: 0xf87171, // red-400
+      y: 0x4ade80, // green-400
+      z: 0x60a5fa  // blue-400
     })
     scene.add(resultFrame)
     resultFrameRef.current = resultFrame
@@ -368,35 +368,35 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
       {/* Legend */}
       <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs">
         <div className="flex gap-6">
-          {/* Input frame */}
+          {/* Current pose frame */}
           <div className="flex items-center gap-2">
-            <span className="text-slate-600 font-medium">Input:</span>
+            <span className="text-slate-600 font-medium">Current:</span>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-red-600"></div>
               <span className="text-slate-500">X</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
               <span className="text-slate-500">Y</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>
               <span className="text-slate-500">Z</span>
             </div>
           </div>
-          {/* Result frame */}
+          {/* Transformed frame */}
           <div className="flex items-center gap-2">
-            <span className="text-slate-600 font-medium">Result:</span>
+            <span className="text-slate-600 font-medium">Transformed:</span>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-red-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-red-400"></div>
               <span className="text-slate-500">X</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-lime-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
               <span className="text-slate-500">Y</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-sm bg-cyan-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>
               <span className="text-slate-500">Z</span>
             </div>
           </div>
