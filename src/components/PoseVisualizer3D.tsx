@@ -94,7 +94,9 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
   const resultFrameRef = useRef<Group | null>(null)
   const connectionLineRef = useRef<Line | null>(null)
   const gridRef = useRef<GridHelper | null>(null)
-  const gridSizeRef = useRef<number>(100)
+  const gridSpacingRef = useRef<number>(1) // Current grid cell spacing in meters
+  const gridExtentRef = useRef<number>(100) // Current grid extent (half-size) in meters
+  const requiredExtentRef = useRef<number>(10) // Required extent based on pose positions
 
   // Camera animation targets
   const targetCameraPosRef = useRef<Vector3 | null>(null)
@@ -180,7 +182,7 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
     controls.dampingFactor = 0.05
-    controls.minDistance = 2
+    controls.minDistance = 0.2 // Allow closer zoom for 10cm grid
     controls.maxDistance = 200 // Allow zooming out further for large coordinates
     controlsRef.current = controls
 
@@ -192,11 +194,65 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     directionalLight.position.set(5, 10, 5)
     scene.add(directionalLight)
 
-    // Grid - rotated to XY plane (Z-up), larger to accommodate distant poses
-    const grid = new GridHelper(100, 100, 0x94a3b8, 0xe2e8f0) // slate colors
+    // Grid - rotated to XY plane (Z-up), dynamic spacing based on zoom
+    const grid = new GridHelper(100, 100, 0x94a3b8, 0xe2e8f0) // 1m spacing initially
     grid.rotation.x = Math.PI / 2 // Rotate to lie on XY plane
     scene.add(grid)
     gridRef.current = grid
+    gridSpacingRef.current = 1
+
+    // Function to update grid based on camera distance and required extent
+    const updateGrid = () => {
+      if (!gridRef.current || !sceneRef.current) return
+
+      const distance = camera.position.distanceTo(controls.target)
+
+      // Choose grid spacing based on distance
+      // Closer = finer grid, farther = coarser grid
+      let targetSpacing: number
+      if (distance < 2) {
+        targetSpacing = 0.1 // 10cm
+      } else if (distance < 10) {
+        targetSpacing = 0.5 // 50cm
+      } else if (distance < 50) {
+        targetSpacing = 1 // 1m
+      } else if (distance < 200) {
+        targetSpacing = 5 // 5m
+      } else {
+        targetSpacing = 10 // 10m
+      }
+
+      // Calculate required grid size based on poses and camera position
+      const cameraExtent = Math.max(
+        Math.abs(controls.target.x),
+        Math.abs(controls.target.y),
+        distance
+      )
+      const minExtent = requiredExtentRef.current
+      const targetExtent = Math.max(minExtent, cameraExtent) * 1.5
+      // Round up to nice number based on spacing
+      const roundedExtent = Math.ceil(targetExtent / (targetSpacing * 10)) * targetSpacing * 10
+
+      // Only recreate grid if spacing or extent changed significantly
+      const spacingChanged = targetSpacing !== gridSpacingRef.current
+      const extentChanged = roundedExtent > gridExtentRef.current * 1.2 // Only grow, with 20% buffer
+
+      if (spacingChanged || extentChanged) {
+        gridSpacingRef.current = targetSpacing
+        gridExtentRef.current = Math.max(gridExtentRef.current, roundedExtent)
+
+        sceneRef.current.remove(gridRef.current)
+        gridRef.current.geometry.dispose()
+
+        // Grid size is diameter (2x extent), divisions based on spacing
+        const gridSize = gridExtentRef.current * 2
+        const divisions = Math.round(gridSize / targetSpacing)
+        const newGrid = new GridHelper(gridSize, divisions, 0x94a3b8, 0xe2e8f0)
+        newGrid.rotation.x = Math.PI / 2
+        sceneRef.current.add(newGrid)
+        gridRef.current = newGrid
+      }
+    }
 
     // World origin axes (subtle)
     const worldAxes = new AxesHelper(0.5)
@@ -258,6 +314,9 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
           targetControlsTargetRef.current = null
         }
       }
+
+      // Update grid based on current zoom level
+      updateGrid()
 
       controls.update()
       renderer.render(scene, camera)
@@ -323,27 +382,12 @@ export function PoseVisualizer3D({ inputPose, transform, resultPose }: PoseVisua
     positions.setXYZ(1, resultPos.x, resultPos.y, resultPos.z)
     positions.needsUpdate = true
 
-    // Dynamically resize grid to encompass poses
-    if (gridRef.current && sceneRef.current) {
-      const maxExtent = Math.max(
-        Math.abs(inputPos.x), Math.abs(inputPos.y),
-        Math.abs(resultPos.x), Math.abs(resultPos.y),
-        10 // minimum grid size
-      )
-      const gridSize = Math.ceil(maxExtent * 2.5 / 10) * 10 // Round up to nearest 10
-
-      // Only update if size changed significantly
-      const currentSize = gridSizeRef.current
-      if (Math.abs(gridSize - currentSize) > 10) {
-        gridSizeRef.current = gridSize
-        sceneRef.current.remove(gridRef.current)
-        gridRef.current.geometry.dispose()
-        const newGrid = new GridHelper(gridSize, gridSize, 0x94a3b8, 0xe2e8f0)
-        newGrid.rotation.x = Math.PI / 2
-        sceneRef.current.add(newGrid)
-        gridRef.current = newGrid
-      }
-    }
+    // Update required grid extent to encompass poses
+    requiredExtentRef.current = Math.max(
+      Math.abs(inputPos.x), Math.abs(inputPos.y),
+      Math.abs(resultPos.x), Math.abs(resultPos.y),
+      10 // minimum extent
+    )
 
     // Auto-fit camera to keep both frames visible
     calculateCameraFit(inputPos, resultPos)
